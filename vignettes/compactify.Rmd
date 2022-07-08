@@ -36,9 +36,8 @@ library(dplyr)
 dt <- select(archive_cases_dv_subset$DT,-percent_cli)
 ```
 
- We can still see how the
-omission of LOCF values changes the dataset. We can see how large each dataset is to better understand why LOCF uses up
-space that may slow down performance.
+We can see how the omission of LOCF values changes the dataset; these LOCF
+values use up space that may slow down performance.
 
 ```{r}
 locf_included <- as_epi_archive(dt,compactify=FALSE)
