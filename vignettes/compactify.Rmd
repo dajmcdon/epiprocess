@@ -126,3 +126,7 @@ library(ggplot2)
 ggplot(speeds_tidy) +
   geom_bar(aes(x=is_locf,y=time_in_s,fill=operation),stat = "identity")
 ```
+
+Given that it takes time to run `compactify`, it takes longer to instantiate
+a new dataset when it is set to `TRUE` rather than `FALSE`. It also takes
+longer to instantiate new datasets when the LOCF values haven't been removed.
