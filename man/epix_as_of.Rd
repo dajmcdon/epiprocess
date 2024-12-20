@@ -4,20 +4,36 @@
 \alias{epix_as_of}
 \title{Generate a snapshot from an \code{epi_archive} object}
 \usage{
-epix_as_of(x, max_version, min_time_value = -Inf)
+epix_as_of(
+  x,
+  version,
+  min_time_value = -Inf,
+  all_versions = FALSE,
+  max_version = deprecated()
+)
 }
 \arguments{
 \item{x}{An \code{epi_archive} object}
 
-\item{max_version}{Time value specifying the max version to permit in the
+\item{version}{Time value specifying the max version to permit in the
 snapshot. That is, the snapshot will comprise the unique rows of the
 current archive data that represent the most up-to-date signal values, as
-of the specified \code{max_version} (and whose time values are at least
+of the specified \code{version} (and whose time values are at least
 \code{min_time_value}.)}
 
 \item{min_time_value}{Time value specifying the min time value to permit in
 the snapshot. Default is \code{-Inf}, which effectively means that there is no
 minimum considered.}
+
+\item{all_versions}{If \code{all_versions = TRUE}, then the output will be in
+\code{epi_archive} format, and contain rows in the specified \code{time_value} range
+having \code{version <= version}. The resulting object will cover a
+potentially narrower \code{version} and \code{time_value} range than \code{x}, depending
+on user-provided arguments. Otherwise, there will be one row in the output
+for the \code{version} of each \code{time_value}. Default is \code{FALSE}.}
+
+\item{max_version}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} please use \code{version}
+argument instead.}
 }
 \value{
 An \code{epi_df} object.
@@ -27,19 +43,38 @@ Generates a snapshot in \code{epi_df} format from an \code{epi_archive} object, 
 given version. See the \href{https://cmu-delphi.github.io/epiprocess/articles/archive.html}{archive vignette} for
 examples.
 }
-\details{
-This is simply a wrapper around the \code{as_of()} method of the
-\code{epi_archive} class, so if \code{x} is an \code{epi_archive} object, then:\preformatted{epix_as_of(x, max_version = v)
-}
-
-is equivalent to:\preformatted{x$as_of(max_version = v)
-}
-}
 \examples{
-# warning message of data latency shown
-epix_as_of(x = archive_cases_dv_subset,
-           max_version = max(archive_cases_dv_subset$DT$version))
+epix_as_of(
+  archive_cases_dv_subset,
+  version = max(archive_cases_dv_subset$DT$version)
+)
 
-# no warning shown
-epix_as_of(archive_cases_dv_subset, max_version = as.Date("2020-06-10"))          
+range(archive_cases_dv_subset$DT$version) # 2020-06-02 -- 2021-12-01
+
+epix_as_of(archive_cases_dv_subset, as.Date("2020-06-12"))
+
+# --- Advanced: ---
+
+# When requesting recent versions of a data set, there can be some
+# reproducibility issues. For example, requesting data as of the current date
+# may return different values based on whether today's data is available yet
+# or not. Other factors include the time it takes between data becoming
+# available and when you download the data, and whether the data provider
+# will overwrite ("clobber") version data rather than just publishing new
+# versions. You can include information about these factors by setting the
+# `clobberable_versions_start` and `versions_end` of an `epi_archive`, in
+# which case you will get warnings about potential reproducibility issues:
+
+archive_cases_dv_subset2 <- as_epi_archive(
+  archive_cases_dv_subset$DT,
+  # Suppose last version with an update could potentially be rewritten
+  # (a.k.a. "hotfixed", "clobbered", etc.):
+  clobberable_versions_start = max(archive_cases_dv_subset$DT$version),
+  # Suppose today is the following day, and there are no updates out yet:
+  versions_end = max(archive_cases_dv_subset$DT$version) + 1L,
+  compactify = TRUE
+)
+
+epix_as_of(archive_cases_dv_subset2, max(archive_cases_dv_subset$DT$version))
+
 }

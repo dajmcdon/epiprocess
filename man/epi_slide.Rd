@@ -5,152 +5,213 @@
 \title{Slide a function over variables in an \code{epi_df} object}
 \usage{
 epi_slide(
-  x,
-  f,
+  .x,
+  .f,
   ...,
-  n = 7,
-  ref_time_values,
-  align = c("right", "center", "left"),
-  before,
-  time_step,
-  new_col_name = "slide_value",
-  as_list_col = FALSE,
-  names_sep = "_",
-  all_rows = FALSE
+  .window_size = NULL,
+  .align = c("right", "center", "left"),
+  .ref_time_values = NULL,
+  .new_col_name = NULL,
+  .all_rows = FALSE
 )
 }
 \arguments{
-\item{x}{The \code{epi_df} object under consideration.}
+\item{.x}{An \code{epi_df} object. If ungrouped, we temporarily group by \code{geo_value}
+and any columns in \code{other_keys}. If grouped, we make sure the grouping is by
+\code{geo_value} and \code{other_keys}.}
 
-\item{f}{Function or formula to slide over variables in \code{x}. To "slide" means
-to apply a function or formula over a running window of \code{n} time steps
-(where one time step is typically one day or one week; see details for more
-explanation). If a function, \code{f} must take \code{x}, a data frame with the same
-column names as the original object; followed by any number of named
-arguments; and ending with \code{...}. If a formula, \code{f} can operate directly on
-columns accessed via \code{.x$var}, as in \code{~ mean(.x$var)} to compute a mean of
-a column \code{var} over a sliding window of \code{n} time steps.}
+\item{.f}{Function, formula, or missing; together with \code{...} specifies the
+computation to slide. The return of the computation should either be a
+scalar or a 1-row data frame. Data frame returns will be
+\code{tidyr::unpack()}-ed, if named, and will be \code{\link[tidyr:pack]{tidyr::pack}}-ed columns, if
+not named. See examples.
+\itemize{
+\item If \code{.f} is missing, then \code{...} will specify the computation via
+tidy-evaluation. This is usually the most convenient way to use
+\code{epi_slide}. See examples.
+\item If \code{.f} is a formula, then the formula should use \code{.x} (not the same as
+the input \code{epi_df}) to operate on the columns of the input \code{epi_df}, e.g.
+\code{~mean(.x$var)} to compute a mean of \code{var}.
+\item If a function, \code{.f} must have the form \verb{function(x, g, t, ...)}, where:
+\itemize{
+\item \code{x} is a data frame with the same column names as the original object,
+minus any grouping variables, with only the windowed data for one
+group-\code{.ref_time_value} combination
+\item \code{g} is a one-row tibble containing the values of the grouping variables
+for the associated group
+\item \code{t} is the \code{.ref_time_value} for the current window
+\item \code{...} are additional arguments
+}
+}}
 
 \item{...}{Additional arguments to pass to the function or formula specified
-via \code{f}. Alternatively, if \code{f} is missing, then the current argument is
-interpreted as an expression for tidy evaluation. See details.}
+via \code{.f}. Alternatively, if \code{.f} is missing, then the \code{...} is interpreted
+as a \link[rlang:args_data_masking]{"data-masking"} expression or expressions
+for tidy evaluation.}
 
-\item{n}{Number of time steps to use in the running window. For example, if
-\code{n = 7}, one time step is one day, and the alignment is "right", then to
-produce a value on January 7 we apply the given function or formula to data
-in between January 1 and 7. Default is 7.}
+\item{.window_size}{The size of the sliding window. The accepted values
+depend on the type of the \code{time_value} column in \code{.x}:
+\itemize{
+\item if time type is \code{Date} and the cadence is daily, then \code{.window_size} can
+be an integer (which will be interpreted in units of days) or a difftime
+with units "days"
+\item if time type is \code{Date} and the cadence is weekly, then \code{.window_size} must
+be a \code{difftime} with units "weeks"
+\item if time type is a \code{yearmonth} or an integer, then \code{.window_size} must be an
+integer
+}}
 
-\item{ref_time_values}{Time values for sliding computations, meaning, each
-element of this vector serves as the reference time point for one sliding
-window. If missing, then this will be set to all unique time values in the
-underlying data table, by default.}
+\item{.align}{The alignment of the sliding window.
+\itemize{
+\item If "right" (default), then the window has its end at the reference time.
+This is likely the most common use case, e.g. \code{.window_size=7} and
+\code{.align="right"} slides over the past week of data.
+\item If "left", then the window has its start at the reference time.
+\item If "center", then the window is centered at the reference time. If the
+window size is odd, then the window will have floor(window_size/2) points
+before and after the reference time; if the window size is even, then the
+window will be asymmetric and have one more value before the reference time
+than after.
+}}
 
-\item{align}{One of "right", "center", or "left", indicating the alignment of
-the sliding window relative to the reference time point. If the alignment
-is "center" and \code{n} is even, then one more time point will be used after
-the reference time point than before. Default is "right".}
+\item{.ref_time_values}{The time values at which to compute the slides
+values. By default, this is all the unique time values in \code{.x}.}
 
-\item{before}{Positive integer less than \code{n}, specifying the number of time
-points to use in the sliding window strictly before the reference time
-point. For example, setting \code{before = n-1} would be the same as setting
-\code{align = "right"}. The \code{before} argument allows for more flexible
-specification of alignment than the \code{align} parameter, and if specified,
-overrides \code{align}.}
+\item{.new_col_name}{Name for the new column that will contain the computed
+values. The default is "slide_value" unless your slide computations output
+data frames, in which case they will be unpacked (as in \code{tidyr::unpack()})
+into the constituent columns and those names used. New columns should not
+be given names that clash with the existing columns of \code{.x}.}
 
-\item{time_step}{Optional function used to define the meaning of one time
-step, which if specified, overrides the default choice based on the
-\code{time_value} column. This function must take a positive integer and return
-an object of class \code{lubridate::period}. For example, we can use \code{time_step = lubridate::hours} in order to set the time step to be one hour (this
-would only be meaningful if \code{time_value} is of class \code{POSIXct}).}
-
-\item{new_col_name}{String indicating the name of the new column that will
-contain the derivative values. Default is "slide_value"; note that setting
-\code{new_col_name} equal to an existing column name will overwrite this column.}
-
-\item{as_list_col}{Should the new column be stored as a list column? Default
-is \code{FALSE}, in which case a list object returned by \code{f} would be unnested
-(using \code{tidyr::unnest()}), and the names of the resulting columns are given
-by prepending \code{new_col_name} to the names of the list elements.}
-
-\item{names_sep}{String specifying the separator to use in \code{tidyr::unnest()}
-when \code{as_list_col = FALSE}. Default is "_". Using \code{NULL} drops the prefix
-from \code{new_col_name} entirely.}
-
-\item{all_rows}{If \code{all_rows = TRUE}, then all rows of \code{x} will be kept in
-the output; otherwise, there will be one row for each time value in \code{x}
-that acts as a reference time value. Default is \code{FALSE}.}
+\item{.all_rows}{If \code{.all_rows = FALSE}, the default, then the output
+\code{epi_df} will have only the rows that had a \code{time_value} in
+\code{.ref_time_values}. Otherwise, all the rows from \code{.x} are included by with
+a missing value marker (typically NA, but more technically the result of
+\code{vctrs::vec_cast}-ing \code{NA} to the type of the slide computation output).}
 }
 \value{
-An \code{epi_df} object given by appending a new column to \code{x}, named
-according to the \code{new_col_name} argument.
+An \code{epi_df} object with one or more new slide computation columns
+added. It will be ungrouped if \code{.x} was ungrouped, and have the same groups
+as \code{.x} if \code{.x} was grouped.
 }
 \description{
-Slides a given function over variables in an \code{epi_df} object. See the \href{https://cmu-delphi.github.io/epiprocess/articles/slide.html}{slide vignette} for
-examples.
+Slides a given function over variables in an \code{epi_df} object.
+This is useful for computations like rolling averages. The function supports
+many ways to specify the computation, but by far the most common use case is
+as follows:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{# Create new column `cases_7dmed` that contains a 7-day trailing median of cases
+epi_slide(edf, cases_7dmed = median(cases), .window_size = 7)
+}\if{html}{\out{</div>}}
+
+For two very common use cases, we provide optimized functions that are much
+faster than \code{epi_slide}: \code{epi_slide_mean()} and \code{epi_slide_sum()}. We
+recommend using these functions when possible.
+
+See \code{vignette("epi_df")} for more examples.
 }
 \details{
-To "slide" means to apply a function or formula over a running
-window of \code{n} time steps, where the unit (the meaning of one time step) is
-implicitly defined by the way the \code{time_value} column treats addition and
-subtraction; for example, if the time values are coded as \code{Date} objects,
-then one time step is one day, since \code{as.Date("2022-01-01") + 1} equals
-\code{as.Date("2022-01-02")}. Alternatively, the time step can be set explicitly
-using the \code{time_step} argument (which if specified would override the
-default choice based on \code{time_value} column). If less than \code{n} time steps
-are available at any given reference time value, then \code{epi_slide()} still
-attempts to perform the computation anyway (it does not require a complete
-window). The issue of what to do with partial computations (those run on
-incomplete windows) is therefore left up to the user, either through the
-specified function or formula \code{f}, or through post-processing.
+\subsection{Advanced uses of \code{.f} via tidy evaluation}{
 
-If \code{f} is missing, then an expression for tidy evaluation can be specified,
-for example, as in:\preformatted{epi_slide(x, cases_7dav = mean(cases), n = 7)
+If specifying \code{.f} via tidy evaluation, in addition to the standard \code{\link{.data}}
+and \code{\link{.env}}, we make some additional "pronoun"-like bindings available:
+\itemize{
+\item .x, which is like \code{.x} in \code{\link[dplyr:group_map]{dplyr::group_modify}}; an ordinary object
+like an \code{epi_df} rather than an rlang \link[rlang:as_data_mask]{pronoun}
+like \code{\link{.data}}; this allows you to use additional \code{dplyr}, \code{tidyr}, and
+\code{epiprocess} operations. If you have multiple expressions in \code{...}, this
+won't let you refer to the output of the earlier expressions, but \code{.data}
+will.
+\item .group_key, which is like \code{.y} in \code{\link[dplyr:group_map]{dplyr::group_modify}}.
+\item .ref_time_value, which is the element of \code{.ref_time_values} that
+determined the time window for the current computation.
 }
-
-which would be equivalent to:\preformatted{epi_slide(x, function(x, ...) mean(x$cases), n = 7,
-          new_col_name = "cases_7dav")
-}
-
-Thus, to be clear, when the computation is specified via an expression for
-tidy evaluation (first example, above), then the name for the new column is
-inferred from the given expression and overrides any name passed explicitly
-through the \code{new_col_name} argument.
-
-When \code{f} is a named function with arguments, if a tibble with an unnamed
-grouping variable is passed in as the method argument to \code{f}, include a
-parameter for the grouping-variable in \verb{function()} just prior to
-specifying the method to prevent that from being overridden. For example:\preformatted{# Construct an tibble with an unnamed grouping variable
-edf = bind_rows(tibble(geo_value = "ak", time_value = as.Date("2020-01-01") 
-          + 1:10, x1=1:10, y=1:10 + rnorm(10L))) \%>\% 
-  as_epi_df()
-
-# Now, include a row parameter for the grouping variable in the tibble, 
-# which we denote as g, just prior to method = "qr"
-# Note that if g was not included below, then the method = "qr" would be 
-# overridden, as described above
-edf \%>\%
-group_by(geo_value) \%>\%
-epi_slide(function(x, g, method="qr", ...) tibble(model=list(
-          lm(y ~ x1, x, method=method))), n=7L) 
 }
 }
 \examples{
- # slide a 7-day trailing average formula on cases
-  jhu_csse_daily_subset \%>\%
+library(dplyr)
+
+# Get the 7-day trailing standard deviation of cases and the 7-day trailing mean of cases
+cases_deaths_subset \%>\%
+  epi_slide(
+    cases_7sd = sd(cases, na.rm = TRUE),
+    cases_7dav = mean(cases, na.rm = TRUE),
+    .window_size = 7
+  ) \%>\%
+  select(geo_value, time_value, cases, cases_7sd, cases_7dav)
+# Note that epi_slide_mean could be used to more quickly calculate cases_7dav.
+
+# In addition to the [`dplyr::mutate`]-like syntax, you can feed in a function or
+# formula in a way similar to [`dplyr::group_modify`]:
+my_summarizer <- function(window_data) {
+  window_data \%>\%
+    summarize(
+      cases_7sd = sd(cases, na.rm = TRUE),
+      cases_7dav = mean(cases, na.rm = TRUE)
+    )
+}
+cases_deaths_subset \%>\%
+  epi_slide(
+    ~ my_summarizer(.x),
+    .window_size = 7
+  ) \%>\%
+  select(geo_value, time_value, cases, cases_7sd, cases_7dav)
+
+
+
+
+
+#### Advanced: ####
+
+# The tidyverse supports ["packing"][tidyr::pack] multiple columns into a
+# single tibble-type column contained within some larger tibble. Like dplyr,
+# we normally don't pack output columns together. However, packing behavior can be turned on
+# by providing a name for a tibble-type output:
+cases_deaths_subset \%>\%
+  epi_slide(
+    slide_packed = tibble(
+      cases_7sd = sd(.x$cases, na.rm = TRUE),
+      cases_7dav = mean(.x$cases, na.rm = TRUE)
+    ),
+    .window_size = 7
+  ) \%>\%
+  select(geo_value, time_value, cases, slide_packed)
+cases_deaths_subset \%>\%
+  epi_slide(
+    ~ tibble(
+      cases_7sd = sd(.x$cases, na.rm = TRUE),
+      cases_7dav = mean(.x$cases, na.rm = TRUE)
+    ),
+    .new_col_name = "slide_packed",
+    .window_size = 7
+  ) \%>\%
+  select(geo_value, time_value, cases, slide_packed)
+
+# You can also get ["nested"][tidyr::nest] format by wrapping your results in
+# a list:
+cases_deaths_subset \%>\%
   group_by(geo_value) \%>\%
-  epi_slide(cases_7dav = mean(cases), n = 7, 
-            align = "right")
- 
- # slide a left-aligned 7-day average
-  jhu_csse_daily_subset \%>\%
-  group_by(geo_value) \%>\%
-  epi_slide(cases_7dav = mean(cases), n = 7, 
-            align = "left")
- 
- # nested new columns
- jhu_csse_daily_subset \%>\% 
- group_by(geo_value) \%>\%
- epi_slide(a = data.frame(cases_2dav = mean(cases), 
-                          cases_2dma = mad(cases)),
-           n = 2, as_list_col = TRUE)
+  epi_slide(
+    function(x, g, t) {
+      list(tibble(
+        cases_7sd = sd(x$cases, na.rm = TRUE),
+        cases_7dav = mean(x$cases, na.rm = TRUE)
+      ))
+    },
+    .window_size = 7
+  ) \%>\%
+  ungroup() \%>\%
+  select(geo_value, time_value, slide_value)
+
+
+
+# Use the geo_value or the ref_time_value in the slide computation
+cases_deaths_subset \%>\%
+  epi_slide(~ .x$geo_value[[1]], .window_size = 7)
+
+cases_deaths_subset \%>\%
+  epi_slide(~ .x$time_value[[1]], .window_size = 7)
+}
+\seealso{
+\code{\link{epi_slide_opt}} for optimized slide functions
 }

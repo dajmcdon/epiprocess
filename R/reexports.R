@@ -55,3 +55,60 @@ dplyr::slice
 #' @importFrom tidyr unnest
 #' @export
 tidyr::unnest
+
+
+#' @importFrom tidyr complete
+#' @export
+tidyr::complete
+
+# We don't provide a method for full_seq, but complete-ing using
+# full_seq(time_value) is still needed to make some downstream things behave
+# nicely.  So make that more ergonomic/discoverable with a re-export:
+
+#' @importFrom tidyr full_seq
+#' @export
+tidyr::full_seq
+
+
+# ggplot2 -----------------------------------------------------------------
+
+#' @importFrom ggplot2 autoplot
+#' @export
+ggplot2::autoplot
+
+
+# epidatasets -------------------------------------------------------------------
+
+#' @rdname epidatasets_reexports
+#'
+#' @title Selected example data sets from `epidatasets`
+#'
+#' @description Data sets re-exported from `epidatasets`; please see
+#'   documentation for each of these objects in `epidatasets`.
+#'
+#' A brief description of the format of each of the objects above are described
+#' in matching order below.
+#'
+#' @keywords internal
+#' @export
+delayedAssign("cases_deaths_subset", epidatasets::cases_deaths_subset)
+
+#' @rdname epidatasets_reexports
+#' @keywords internal
+#' @export
+delayedAssign("covid_incidence_county_subset", epidatasets::covid_incidence_county_subset)
+
+#' @rdname epidatasets_reexports
+#' @keywords internal
+#' @export
+delayedAssign("covid_incidence_outliers", epidatasets::covid_incidence_outliers)
+
+#' @rdname epidatasets_reexports
+#' @keywords internal
+#' @export
+delayedAssign("archive_cases_dv_subset", epidatasets::archive_cases_dv_subset)
+
+#' @rdname epidatasets_reexports
+#' @keywords internal
+#' @export
+delayedAssign("covid_case_death_rates_extended", epidatasets::covid_case_death_rates_extended)

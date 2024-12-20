@@ -5,3 +5,17 @@
 *.Rproj
 inst/doc
 docs
+/doc/
+/Meta/
+*.DS_Store
+
+# Delphi custom
+renv/
+renv.lock
+.Rprofile
+sandbox.R
+# Vignette caches
+*_cache/
+vignettes/*.html
+vignettes/*.R
+!vignettes/_common.R

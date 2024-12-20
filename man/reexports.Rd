@@ -14,6 +14,9 @@
 \alias{rename}
 \alias{slice}
 \alias{unnest}
+\alias{complete}
+\alias{full_seq}
+\alias{autoplot}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -23,7 +26,9 @@ below to see their documentation.
 \describe{
   \item{dplyr}{\code{\link[dplyr]{arrange}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr:group_map]{group_modify}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{relocate}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{slice}}, \code{\link[dplyr:group_by]{ungroup}}}
 
-  \item{tidyr}{\code{\link[tidyr:nest]{unnest}}}
+  \item{ggplot2}{\code{\link[ggplot2]{autoplot}}}
+
+  \item{tidyr}{\code{\link[tidyr]{complete}}, \code{\link[tidyr]{full_seq}}, \code{\link[tidyr]{unnest}}}
 
   \item{tsibble}{\code{\link[tsibble:as-tsibble]{as_tsibble}}}
 }}

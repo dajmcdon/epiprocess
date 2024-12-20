@@ -1,57 +1,107 @@
-Type: Package
 Package: epiprocess
+Type: Package
 Title: Tools for basic signal processing in epidemiology
-Version: 1.0.0
+Version: 0.10.0
 Authors@R: c(
     person("Jacob", "Bien", role = "ctb"),
-    person("Logan", "Brooks", role = "aut"),
+    person("Logan", "Brooks", , "lcbrooks+github@andrew.cmu.edu", role = c("aut", "cre")),
     person("Rafael", "Catoia", role = "ctb"),
-    person("Daniel", "McDonald", role = "ctb"),
+    person("Nat", "DeFries", role = "aut"),
+    person("Daniel", "McDonald", role = "aut"),
+    person("Rachel", "Lobay", role = "ctb"),
+    person("Ken", "Mawer", role = "ctb"),
+    person("Chloe", "You", role = "ctb"),
     person("Quang", "Nguyen", role = "ctb"),
     person("Evan", "Ray", role = "aut"),
-    person("Dmitry", "Shemetov", role = "ctb"),
-    person("Ryan", "Tibshirani", , "ryantibs@cmu.edu", role = c("aut", "cre"))
+    person("Dmitry", "Shemetov", role = "aut"),
+    person("Ryan", "Tibshirani", role = "aut"),
+    person("David", "Weber", , "davidweb@andrew.cmu.edu", role = "ctb"),
+    person("Lionel", "Henry", role = "ctb",
+           comment = "Author of included rlang fragments"),
+    person("Hadley", "Wickham", role = "ctb",
+           comment = "Author of included rlang fragments"),
+    person("Posit", role = "cph",
+           comment = "Copyright holder of included rlang fragments"),
+    person("Johns Hopkins University Center for Systems Science and Engineering", role = "dtc",
+            comment = "Owner of COVID-19 cases and deaths data from the COVID-19 Data Repository"),
+    person("Johns Hopkins University", role = "cph",
+            comment = "Copyright holder of COVID-19 cases and deaths data from the COVID-19 Data Repository"),
+    person("Carnegie Mellon University Delphi Group", role = "dtc",
+            comment = "Owner of claims-based CLI data from the Delphi Epidata API")
   )
-Description: This package introduces a common data structure for
-    epidemiological data sets measured over space and time, and offers
-    associated utilities to perform basic signal processing tasks.
+Description: This package introduces common data structures for working with
+    epidemiological data reported by location and time and offers associated
+    utilities to perform basic signal processing tasks. The package is designed
+    to be used in conjunction with `epipredict` for building and evaluating
+    epidemiological models.
 License: MIT + file LICENSE
-Imports: 
+URL: https://cmu-delphi.github.io/epiprocess/
+Depends:
+    R (>= 3.6)
+Imports:
+    checkmate,
+    cli,
     data.table,
-    dplyr,
-    fabletools,
-    feasts,
-    generics,
+    dplyr (>= 1.1.0),
+    epidatasets,
     genlasso,
+    ggplot2,
+    glue,
+    lifecycle (>= 1.0.1),
     lubridate,
     magrittr,
     purrr,
-    R6,
     rlang,
     slider,
     tibble,
     tidyr,
-    tidyselect,
+    tidyselect (>= 1.2.0),
     tsibble,
-    utils
+    utils,
+    vctrs,
+    waldo
 Suggests:
-    covidcast,
-    delphi.epidata,
-    ggplot2,
+    devtools,
+    epidatr,
+    here,
     knitr,
     outbreaks,
+    readr,
     rmarkdown,
-    testthat (>= 3.0.0)
-VignetteBuilder: 
+    testthat (>= 3.1.5),
+    withr
+VignetteBuilder:
     knitr
 Remotes:
-    dajmcdon/delphi.epidata,
+    cmu-delphi/delphidocs,
+    cmu-delphi/epidatasets,
+    cmu-delphi/epidatr,
+    glmgen/genlasso,
     reconverse/outbreaks
+Config/Needs/website: cmu-delphi/delphidocs
 Config/testthat/edition: 3
+Config/testthat/parallel: true
+Copyright: file inst/COPYRIGHTS
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
-Depends: 
-    R (>= 2.10)
-URL: https://cmu-delphi.github.io/epiprocess/
+RoxygenNote: 7.3.2
+Collate:
+    'archive.R'
+    'autoplot.R'
+    'correlation.R'
+    'epi_df.R'
+    'epi_df_forbidden_methods.R'
+    'epiprocess-package.R'
+    'group_by_epi_df_methods.R'
+    'methods-epi_archive.R'
+    'grouped_epi_archive.R'
+    'growth_rate.R'
+    'key_colnames.R'
+    'methods-epi_df.R'
+    'outliers.R'
+    'reexports.R'
+    'revision_analysis.R'
+    'slide.R'
+    'utils.R'
+    'utils_pipe.R'
